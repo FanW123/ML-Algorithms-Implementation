@@ -1,17 +1,8 @@
 # ML-Algorithms-Implementation
 1. Grow Decision Tree from scratch with Python 
  
--- Working with two datasets:
+-- Working with two datasets: Iris, Spambase
 
-• Iris: has three classes and the task is to accurately predict one of the three sub-types of the Iris flower given four different physical features. These features include the length and width of the sepals and the petals. There are a total of 150 instances with each class having 50 instances.
-
-• Spambase: is a binary classification task and the objective is to classify email messages as being spam or not. To this end the dataset uses fifty seven text based features to represent each email message. There are about 4600 instances
-
+-- Implement decision trees that have binary splits. For determining the optimal threshold for splitting, I search over all possible thresholds for a given feature
  
--- Implement decision trees that have binary splits. For determining the optimal threshold for splitting, I search over all possible thresholds for a given feature(refer to class notes and discussion for an efficient search strategy).
- 
--- Early stopping:
- 
- For the Iris dataset, use ηmin ∈ {0.05, 0.10, 0.15, 0.20}
- 
- For the Spambase dataset use ηmin ∈ {0.05, 0.10, 0.15, 0.20, 0.25}
+-- Early stopping
