@@ -92,16 +92,6 @@ def predict(node, row):
         else:
             return node['right']
 
-
-def decision_tree(train, test, max_depth, min_size):
-    tree = build_tree(train, max_depth, min_size)
-    predictions = list()
-    for row in test:
-        prediction = predict(tree, row)
-        predictions.append(prediction)
-    return (predictions)
-
-
 def evaluation(dataset, thresholds, n_folds=10, mean_ratio=[0.05, 0.10, 0.15, 0.20]):
     folds = cross_validation_split(dataset, n_folds)
     acc = {}
@@ -133,6 +123,8 @@ def create_node(dataset, thresholds):
     info_gain = 0.0
     new_node = {}
     for feature in range(len(dataset[0]) - 1):
+        if len(thresholds[feature]) == 0:
+            continue
         IG, node = max_info_gain(dataset, feature, thresholds)
         if IG >= info_gain:
             info_gain = IG
@@ -173,18 +165,19 @@ def calc_condition_ent(dataset, thresholds, feature):
 #     feature_thresholds = thresholds[:, feature]
     # thresholds = [2]
     min_ent, min_threshold, group = sys.maxsize, sys.maxsize, None
-    for feature_thresholds in thresholds:
-        for threshold in feature_thresholds:
-            left, right = split(dataset, feature, threshold)
-            left_label = np.array([row[-1] for row in left])
-            right_label = np.array([row[-1] for row in right])
+    feature_thresholds = thresholds[feature]
 
-            left_ent = calc_ent(left_label)
-            right_ent = calc_ent(right_label)
-            ent = (float(left_label.shape[0]) / len(dataset)) * left_ent + (
-                    float(right_label.shape[0]) / len(dataset)) * right_ent
-            if ent < min_ent:
-                min_ent, min_threshold, group = ent, threshold, (left, right)
+    for threshold in feature_thresholds:
+        left, right = split(dataset, feature, threshold)
+        left_label = np.array([row[-1] for row in left])
+        right_label = np.array([row[-1] for row in right])
+
+        left_ent = calc_ent(left_label)
+        right_ent = calc_ent(right_label)
+        ent = (float(left_label.shape[0]) / len(dataset)) * left_ent + (
+                float(right_label.shape[0]) / len(dataset)) * right_ent
+        if ent < min_ent:
+            min_ent, min_threshold, group = ent, threshold, (left, right)
     return {'condition_ent': min_ent, 'index': feature, 'group': group, 'thres': min_threshold}
 
 
@@ -202,18 +195,18 @@ def create_leaf(group):
     outcomes = [row[-1] for row in group]
     return max(set(outcomes), key=outcomes.count)
 
-
 def build_tree_helper(node, min_size, thresholds):
-    if node['group'] is None:
+    if not thresholds:
         return
+
     left, right = node['group']
     del (node['group'])
     # if left is empty or right is empty, no split
-    if not left:
+    if len(left) == 0:
         node['left'] = node['right'] = create_leaf(right)
         return
 
-    if not right:
+    if len(right) == 0:
         node['right'] = node['left'] = create_leaf(left)
         return
 
@@ -222,6 +215,7 @@ def build_tree_helper(node, min_size, thresholds):
         node['left'] = create_leaf(left)
     else:
         node['left'] = create_node(left, thresholds)
+        thresholds[node['left']['index']].remove(node['left']['thres'])
         build_tree_helper(node['left'], min_size, thresholds)
 
     # right child
@@ -229,23 +223,22 @@ def build_tree_helper(node, min_size, thresholds):
         node['right'] = create_leaf(right)
     else:
         node['right'] = create_node(right, thresholds)
+        thresholds[node['right']['index']].remove(node['right']['thres'])
         build_tree_helper(node['right'], min_size, thresholds)
+
 
 def build_tree(dataset, min_size, thresholds):
     root = create_node(dataset, thresholds)
+    print root['index']
+    print root['thres']
+    thresholds[root['index']].remove(root['thres'])
     build_tree_helper(root, min_size, thresholds)
-    #print_tree(root)
     return root
 
-# def print_tree(root):
-#     print root
-#     print "\n"
 
+seed(1)
 dataset = load_csv("spambase.csv")
-# dataset = np.array(dataset)
-dataset = dataset[0:200]
 dataset = pre_process(dataset)
 thresholds = get_thresholds(dataset)
-# thresholds
-acc = evaluation(dataset, thresholds)
-print(acc)
+eval = evaluation(dataset, thresholds)
+print eval
