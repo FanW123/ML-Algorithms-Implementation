@@ -215,7 +215,8 @@ def build_tree_helper(node, min_size, thresholds):
         node['left'] = create_leaf(left)
     else:
         node['left'] = create_node(left, thresholds)
-        thresholds[node['left']['index']].remove(node['left']['thres'])
+        if not node['left']:
+            thresholds[node['left']['index']].remove(node['left']['thres'])
         build_tree_helper(node['left'], min_size, thresholds)
 
     # right child
@@ -223,7 +224,8 @@ def build_tree_helper(node, min_size, thresholds):
         node['right'] = create_leaf(right)
     else:
         node['right'] = create_node(right, thresholds)
-        thresholds[node['right']['index']].remove(node['right']['thres'])
+        if not node['right']:
+            thresholds[node['right']['index']].remove(node['right']['thres'])
         build_tree_helper(node['right'], min_size, thresholds)
 
 
@@ -235,10 +237,10 @@ def build_tree(dataset, min_size, thresholds):
     build_tree_helper(root, min_size, thresholds)
     return root
 
-
 seed(1)
 dataset = load_csv("spambase.csv")
 dataset = pre_process(dataset)
-thresholds = get_thresholds(dataset)
+thresholds = get_thresholds(dataset[:2000])
 eval = evaluation(dataset, thresholds)
 print eval
+
