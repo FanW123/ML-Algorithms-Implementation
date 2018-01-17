@@ -9,49 +9,18 @@ from csv import reader
 # predict one of the three sub-types of the Iris  ower given four different physical features.
 # These features include the length and width of the sepals and the petals.
 # There are a total of 150 instances with each class having 50 instances.
-
 # Load a CSV file
 def load_csv(filename):
-    file = open(filename, "rb")
+    file = open(filename, "r")
     lines = reader(file)
     dataset = list(lines)
     return dataset
-
 
 # Convert string column to float
 def str_column_to_float(dataset, column):
     for row in dataset:
         if len(row) != 0:
             row[column] = float(row[column].strip())
-
-
-# def pre_process(dataset):
-#     # convert string attributes to integers
-#     # dataset = np.array(dataset)
-#     for i in range(len(dataset[0])):
-#         str_column_to_float(dataset, i)
-#
-#     x = np.array(dataset)[:, 0:-1]
-#     y = np.array(dataset)[:, -1]
-#     # normalize features
-#     #x = preprocessing.normalize(x, axis=0)
-#
-#     # concatenate
-#     dataset = np.concatenate((x, np.array([y]).T), axis=1)
-#     # print dataset
-#     # shuffle is done in the split-n-fold part
-#     # generate thresholds
-#     num_feature = len(dataset[0]) - 1
-#     num_threshold = len(dataset[:, 0]) - 1
-#     thresholds = np.zeros((num_threshold, num_feature))
-#     for col in range(num_feature):  # loop all the features (0, 1, 2, 3)
-#         feature = sorted(dataset[:, col])
-#         #   print feature
-#         for row in range(num_threshold):
-#             s = feature[row] + feature[row + 1]
-#             thresholds[row, col] = s / 2.
-#
-#     return dataset, thresholds
 
 def pre_process(dataset):
     # convert string attributes to integers
@@ -86,7 +55,6 @@ def get_thresholds(dataset): # type(dataset) = ndarray
         #add the list of thresholds for the feature
         thresholds.append(set(temp))
     return thresholds
-
 
 # Split a dataset into k folds
 def cross_validation_split(dataset, n_folds):
@@ -134,7 +102,7 @@ def decision_tree(train, test, max_depth, min_size):
     return (predictions)
 
 
-def evaluation(dataset, threshold, n_folds=10, mean_ratio=[0.05, 0.10, 0.15, 0.20]):
+def evaluation(dataset, thresholds, n_folds=10, mean_ratio=[0.05, 0.10, 0.15, 0.20]):
     folds = cross_validation_split(dataset, n_folds)
     acc = {}
     for ratio in mean_ratio:
@@ -196,29 +164,6 @@ def calc_ent(label):
         ent -= p * logp
     return ent
 
-#
-# def calc_condition_ent(dataset, thresholds, feature):
-#     """
-#         calculate ent H(y|x)
-#     """
-#     # calc ent(y|x)
-#     feature_thresholds = thresholds[:, feature]
-#     # thresholds = [2]
-#     min_ent, min_threshold, group = sys.maxsize, sys.maxsize, None
-#
-#     for threshold in feature_thresholds:
-#         left, right = split(dataset, feature, threshold)
-#         left_label = np.array([row[-1] for row in left])
-#         right_label = np.array([row[-1] for row in right])
-#
-#         left_ent = calc_ent(left_label)
-#         right_ent = calc_ent(right_label)
-#         ent = (float(left_label.shape[0]) / len(dataset)) * left_ent + (
-#                 float(right_label.shape[0]) / len(dataset)) * right_ent
-#         if ent < min_ent:
-#             min_ent, min_threshold, group = ent, threshold, (left, right)
-#     return {'condition_ent': min_ent, 'index': feature, 'group': group, 'thres': min_threshold}
-
 
 def calc_condition_ent(dataset, thresholds, feature):
     """
@@ -246,7 +191,7 @@ def calc_condition_ent(dataset, thresholds, feature):
 def split(dataset, feature, threshold):
     left, right = list(), list()
     for row in dataset:
-        if row[feature] <= threshold:
+        if row[feature] < threshold:
             left.append(row)
         else:
             right.append(row)
@@ -259,14 +204,16 @@ def create_leaf(group):
 
 
 def build_tree_helper(node, min_size, thresholds):
+    if node['group'] is None:
+        return
     left, right = node['group']
     del (node['group'])
     # if left is empty or right is empty, no split
-    if len(left) == 0:
+    if not left:
         node['left'] = node['right'] = create_leaf(right)
         return
 
-    if len(right) == 0:
+    if not right:
         node['right'] = node['left'] = create_leaf(left)
         return
 
@@ -284,21 +231,21 @@ def build_tree_helper(node, min_size, thresholds):
         node['right'] = create_node(right, thresholds)
         build_tree_helper(node['right'], min_size, thresholds)
 
-
 def build_tree(dataset, min_size, thresholds):
     root = create_node(dataset, thresholds)
     build_tree_helper(root, min_size, thresholds)
-    # print_tree(root)
+    #print_tree(root)
     return root
 
+# def print_tree(root):
+#     print root
+#     print "\n"
 
-def print_tree(root):
-    print root
-    print "\n"
-
-seed(1)
 dataset = load_csv("spambase.csv")
+# dataset = np.array(dataset)
+dataset = dataset[0:200]
 dataset = pre_process(dataset)
-thresholds = get_thresholds(dataset[:1900])
-eval = evaluation(dataset, thresholds, n_folds=2, mean_ratio=[0.2])
-print eval
+thresholds = get_thresholds(dataset)
+# thresholds
+acc = evaluation(dataset, thresholds)
+print(acc)
