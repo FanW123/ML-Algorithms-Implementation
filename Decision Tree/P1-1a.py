@@ -6,6 +6,8 @@ from sklearn import preprocessing
 import sys
 from random import randrange
 from random import seed
+from sklearn.model_selection import KFold
+
 # predict one of the three sub-types of the Irisower given four different physical features.
 # These features include the length and width of the sepals and the petals.
 # There are a total of 150 instances with each class having 50 instances.
@@ -94,9 +96,29 @@ def evaluation(dataset, thresholds, n_folds=10, mean_ratio=[0.05, 0.10, 0.15, 0.
             accuracy = accuracy_metric(actual, predicted)
             scores.append(accuracy)
         acc[ratio] = {}
-        acc[ratio]["acc"] = sum(scores) / float(len(scores))
+        acc[ratio]["acc"] = sum(scores) / (float(len(scores)) * 100)
         acc[ratio]["std"] = np.std(np.array(scores))
     return acc
+
+# sklearn cross validation, need to do shuffling in preprocessing
+# def evaluation(dataset, thresholds, n_folds = 10, mean_ratio = [0.05, 0.10, 0.15, 0.20]):
+#     acc = {}
+#     for ratio in mean_ratio:
+#         min_size = ratio * len(dataset)
+#         scores = list()
+#         kf = KFold(n_splits=10)
+#         for train, test in kf.split(dataset):
+#             node = build_tree(dataset[train], min_size, thresholds)
+#             predicted = list()
+#             for row in dataset[test]:
+#                 predicted.append(predict(node, row))
+#             actual = dataset[test][:, -1]
+#             accuracy = accuracy_metric(actual, predicted)
+#             scores.append(accuracy)
+#         acc[ratio] = {}
+#         acc[ratio]["acc"] = sum(scores)/float(len(scores))
+#         acc[ratio]["std"] = np.std(np.array(scores))
+#     return acc
 
 
 def create_node(dataset, thresholds):
@@ -214,9 +236,41 @@ def build_tree_helper(node, min_size, thresholds):
 
 def build_tree(dataset, min_size, thresholds):
     root = create_node(dataset, thresholds)
+    #print root['index']
+    #print root['thres']
     thresholds[root['index']].remove(root['thres'])
     build_tree_helper(root, min_size, thresholds)
     return root
+
+def confusion_matrix_helper(dataset, thresholds, n_folds=10, ratio = 0.5):
+    folds = cross_validation_split(dataset, n_folds)
+    best_acc = 0.0
+    actual = list()
+    predicted = list()
+    min_size = ratio * len(dataset)
+    scores = list()
+    for i in range(len(folds)):
+        fold = folds[i]
+        train_set = list(folds)
+        train_set.pop(i)
+        train_set = sum(train_set, [])
+        node = build_tree(train_set, min_size, thresholds)
+        temp_predicted = list()
+        for row in fold:
+            temp_predicted.append(predict(node, row))
+        temp_actual = [row[-1] for row in fold]
+        acc = accuracy_metric(temp_actual, temp_predicted)
+        if acc > best_acc:
+            best_acc = acc
+            actual = temp_actual
+            predicted = temp_predicted
+    return actual, predicted
+
+def confusion_matrix(actual, predicted):
+    confusion_matrix = np.zeros((len(actual), len(predicted)))
+    for i in range(len(actual)):
+        confusion_matrix[int(actual[i]), int(predicted[i])] += 1
+    return confusion_matrix
 
 #seed(1)
 dataset = pre_process()
