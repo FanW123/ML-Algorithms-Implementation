@@ -33,10 +33,10 @@ class Preprocess:
         binary_feature_matrix = []  # list
         attri_table = []
         dataset = self.pre_process()
-        for feature in range(len(dataset[0])):
+        for feature in range(len(dataset[0]) - 1):
             attri_list = list(set(dataset[:, feature]))
             attri_table.append(attri_list)
-            num_attri = len(attri_list)  # 该feature有num_attri种取值
+            num_attri = len(attri_list)  # the feature has num_attri's attributes
             matrix = np.zeros((dataset.shape[0], num_attri))  # 2-d ndarray
             for row in range(len(dataset)):
                 for col in range(len(attri_list)):
@@ -155,8 +155,9 @@ def calc_condition_ent(dataset, thresholds, feature):
     #     feature_thresholds = thresholds[:, feature]
     # thresholds = [2]
     min_ent, group, key = sys.maxsize, None, ''
-    attri_table = thresholds[1]
-    for i in range(len(thresholds[feature][0])):
+    attri_table = thresholds[1][feature]
+
+    for i in range(len(attri_table)):
         left, right = split(dataset, feature, thresholds, i)
         left_label = np.array([row[-1] for row in left])
         right_label = np.array([row[-1] for row in right])
@@ -174,6 +175,7 @@ def split(dataset, feature, thresholds, col):
     left, right = list(), list()
     # get the index of the feature == 1
     # add the dataset[index] to left list
+    print col
     index_list = np.where(thresholds[0][feature][:, col] == 1)[0]
     for i in range(len(dataset)):
         if i in index_list:
@@ -222,3 +224,8 @@ def build_tree(dataset, min_size, thresholds):
     root = create_node(dataset, thresholds)
     build_tree_helper(root, min_size, thresholds)
     return root
+
+preprocess = Preprocess('mushroom.csv')
+dataset = preprocess.pre_process()
+thresholds = preprocess.get_thresholds()
+print(evaluation(dataset, thresholds, n_folds=10, mean_ratio=[0.05, 0.10, 0.15]))
