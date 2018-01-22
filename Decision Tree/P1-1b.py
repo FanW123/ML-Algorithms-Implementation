@@ -1,10 +1,9 @@
 import numpy as np
-from sklearn import preprocessing
 import sys
 from random import randrange
 from random import seed
 from csv import reader
-
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, Normalizer
 
 # predict one of the three sub-types of the Iris  ower given four different physical features.
 # These features include the length and width of the sepals and the petals.
@@ -31,11 +30,23 @@ def pre_process(dataset):
     x = np.array(dataset)[:, 0:-1]
     y = np.array(dataset)[:, -1]
     # normalize features
-    #x = preprocessing.normalize(x, axis=0)
+    x = normalize_data(x)
 
     # concatenate
     dataset = np.concatenate((x, np.array([y]).T), axis=1)
     return dataset
+
+def normalize_data(data_set, type="min_max"):
+    if type == "std":
+        scaler = StandardScaler().fit(data_set)
+        X_scaled = scaler.transform(data_set)
+    if type == "l1" or type == "l2":
+        scaler = Normalizer(norm = type)
+        X_scaled = scaler.fit_transform(data_set)
+    if type == "min_max":
+        scaler = MinMaxScaler(feature_range=(0, 1))
+        X_scaled = scaler.fit_transform(data_set)
+    return X_scaled
 
 def get_thresholds(dataset): # type(dataset) = ndarray
     # shuffle is done in the split-n-fold part
@@ -231,8 +242,8 @@ def build_tree_helper(node, min_size, thresholds):
 
 def build_tree(dataset, min_size, thresholds):
     root = create_node(dataset, thresholds)
-    print root['index']
-    print root['thres']
+    #print root['index']
+    #print root['thres']
     thresholds[root['index']].remove(root['thres'])
     build_tree_helper(root, min_size, thresholds)
     return root
