@@ -1,26 +1,35 @@
-import sklearn
 from sklearn import datasets
 import numpy as np
-import math
-from sklearn import preprocessing
 import sys
 from random import randrange
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, Normalizer
 from random import seed
-from sklearn.model_selection import KFold
 
 # predict one of the three sub-types of the Irisower given four different physical features.
 # These features include the length and width of the sepals and the petals.
 # There are a total of 150 instances with each class having 50 instances.
+
 def pre_process():
     iris = datasets.load_iris()
     x = iris.data
     y = iris.target
     # normalize features
-    x = preprocessing.normalize(x, axis=0)
+    x = normalize_data(x)
     # concatenate
     dataset = np.concatenate((x, np.array([y]).T), axis=1)
     return dataset
 
+def normalize_data(data_set, type="min_max"):
+    if type == "std":
+        scaler = StandardScaler().fit(data_set)
+        X_scaled = scaler.transform(data_set)
+    if type == "l1" or type == "l2":
+        scaler = Normalizer(norm = type)
+        X_scaled = scaler.fit_transform(data_set)
+    if type == "min_max":
+        scaler = MinMaxScaler(feature_range=(0, 1))
+        X_scaled = scaler.fit_transform(data_set)
+    return X_scaled
 
 def get_thresholds(dataset): # type(dataset) = ndarray
     # shuffle is done in the split-n-fold part
@@ -43,6 +52,7 @@ def get_thresholds(dataset): # type(dataset) = ndarray
 
 # Split a dataset into k folds
 def cross_validation_split(dataset, n_folds):
+
     dataset_split = list()
     dataset_copy = list(dataset)
     fold_size = int(len(dataset) / n_folds)
@@ -272,7 +282,7 @@ def confusion_matrix(actual, predicted):
         confusion_matrix[int(actual[i]), int(predicted[i])] += 1
     return confusion_matrix
 
-#seed(1)
+seed(1)
 dataset = pre_process()
 thresholds = get_thresholds(dataset)
 eval = evaluation(dataset, thresholds)
