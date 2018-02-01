@@ -5,10 +5,11 @@ from random import seed
 from csv import reader
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, Normalizer
 
-# predict one of the three sub-types of the Iris  ower given four different physical features.
-# These features include the length and width of the sepals and the petals.
-# There are a total of 150 instances with each class having 50 instances.
-# Load a CSV file
+"""
+Spambase: is a binary classification task and the objective is to classify email messages 
+as being spam or not. To this end the dataset uses fifty seven text based features to represent 
+ each email message. 
+"""
 def load_csv(filename):
     file = open(filename, "r")
     lines = reader(file)
@@ -103,7 +104,7 @@ def predict(node, row):
         else:
             return node['right']
 
-def evaluation(dataset, thresholds, n_folds=10, mean_ratio=[0.05, 0.10, 0.15, 0.20]):
+def evaluation(dataset, thresholds, n_folds=10, mean_ratio=[0.05, 0.10, 0.15, 0.20, 0.25]):
     folds = cross_validation_split(dataset, n_folds)
     acc = {}
     for ratio in mean_ratio:
@@ -242,16 +243,57 @@ def build_tree_helper(node, min_size, thresholds):
 
 def build_tree(dataset, min_size, thresholds):
     root = create_node(dataset, thresholds)
-    #print root['index']
-    #print root['thres']
     thresholds[root['index']].remove(root['thres'])
     build_tree_helper(root, min_size, thresholds)
     return root
 
-seed(1)
-dataset = load_csv("spambase.csv")
-dataset = pre_process(dataset)
-thresholds = get_thresholds(dataset[:2000])
-eval = evaluation(dataset, thresholds)
-print eval
+def confusion_matrix_helper(dataset, thresholds, n_folds=10, ratio = 0.5):
+    classes = len(set(dataset[:, -1]))
+    folds = cross_validation_split(dataset, n_folds)
+    best_acc = 0.0
+    actual = list()
+    predicted = list()
+    min_size = ratio * len(dataset)
+    scores = list()
+    for i in range(len(folds)):
+        fold = folds[i]
+        train_set = list(folds)
+        train_set.pop(i)
+        train_set = sum(train_set, [])
+        node = build_tree(train_set, min_size, thresholds)
+        temp_predicted = list()
+        for row in fold:
+            temp_predicted.append(predict(node, row))
+        temp_actual = [row[-1] for row in fold]
+        acc = accuracy_metric(temp_actual, temp_predicted)
+        if acc > best_acc:
+            best_acc = acc
+            actual = temp_actual
+            predicted = temp_predicted
+    return actual, predicted, classes
+
+def confusion_matrix(actual, predicted, classes):
+    confusion_matrix = np.zeros([classes, classes])
+    for i in range(len(actual)):
+        confusion_matrix[int(predicted[i]), int(actual[i])] += 1
+    return confusion_matrix
+
+
+def main():
+    seed(1)
+    dataset = load_csv("spambase.csv")
+    dataset = pre_process(dataset)
+    thresholds = get_thresholds(dataset)
+    ev = evaluation(dataset, thresholds)
+    for i in ev:
+        print("ratio: {0:.2f} acc: {1:.2f} std: {2:.2f}".format(i, ev[i]['acc'], ev[i]['std']))
+
+    # get confusion matrix
+    actual, predicted, classes = confusion_matrix_helper(dataset, thresholds)
+    print(confusion_matrix(actual, predicted, classes))
+
+
+if __name__ == '__main__':
+    main()
+
 
