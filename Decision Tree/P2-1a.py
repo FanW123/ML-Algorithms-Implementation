@@ -1,10 +1,17 @@
-import collections, numpy
-import numpy as np
-from sklearn import preprocessing
-import sys
-from random import randrange
-from random import seed
+import collections
 from csv import reader
+import numpy as np
+from random import randrange
+
+"""
+  Mushroom: is binary classification dataset and the task is to accurately predict
+  whether a mushroom is poisonous or edible given 21 different categorical (ordinal)
+  features for each mushroom. These features describe various physical properties of
+  the mushrooms such as length, diameter, etc. There are a total of 8124 instances.
+
+   Task: Grow a multiway decision tree using min = {0.05,0.10,0.15}, and calculate the 
+   accuracy using ten fold cross-validation for each value of min
+"""
 
 
 class Preprocess:
@@ -15,23 +22,11 @@ class Preprocess:
         file = open(self.filename, "r")
         lines = reader(file)
         dataset = list(lines)
-        return dataset
-
-    def pre_process(self):
-        # convert string attributes to integers if needed
-        dataset = self.load_csv()
-        x = np.array(dataset)[:, 0:-1]
-        y = np.array(dataset)[:, -1]
-        # normalize features
-        # x = preprocessing.normalize(x, axis=0)
-
-        # concatenate
-        dataset = np.concatenate((x, np.array([y]).T), axis=1)
-        return dataset
+        return np.array(dataset)
 
     def get_thresholds(self):
         thresholds = []
-        dataset = self.pre_process()
+        dataset = self.load_csv()
         for feature in range(len(dataset[0])):
             thresholds.append(collections.Counter(dataset[:, feature]))
         return thresholds
@@ -191,7 +186,6 @@ def build_tree_helper(node, min_size, thresholds):
             node['child'].append(leaf_node)
             continue
 
-
         if len(sub_group) <= min_size or len(set(sub_group[:, -1])) == 1:
             leaf_node = create_leaf(sub_group)
             node['child'].append(leaf_node)
@@ -206,7 +200,54 @@ def build_tree(dataset, min_size, thresholds):
     build_tree_helper(root, min_size, thresholds)
     return root
 
-preprocess = Preprocess('mushroom.csv')
-dataset = preprocess.pre_process()
-thresholds = preprocess.get_thresholds()
-print(evaluation(dataset, thresholds))
+
+def confusion_matrix_helper(dataset, thresholds, n_folds=10, ratio=0.05):
+    classes = len(set(dataset[:, -1]))
+    folds = cross_validation_split(dataset, n_folds)
+    best_acc = 0.0
+    actual = list()
+    predicted = list()
+    min_size = ratio * len(dataset)
+    scores = list()
+    for i in range(len(folds)):
+        fold = folds[i]
+        train_set = list(folds)
+        train_set.pop(i)
+        train_set = sum(train_set, [])
+        node = build_tree(train_set, min_size, thresholds)
+        temp_predicted = list()
+        for row in fold:
+            temp_predicted.append(predict(node, row))
+        temp_actual = [row[-1] for row in fold]
+        acc = accuracy_metric(temp_actual, temp_predicted)
+        if acc > best_acc:
+            best_acc = acc
+            actual = temp_actual
+            predicted = temp_predicted
+    return actual, predicted, classes
+
+
+def confusion_matrix(actual, predicted, classes):
+    confusion_matrix = np.zeros([classes, classes])
+    for i in range(len(actual)):
+        row = 1 if predicted[i] == 'p' else 0
+        col = 1 if actual[i] == 'p' else 0
+        confusion_matrix[row, col] += 1
+    return confusion_matrix
+
+
+def main():
+    preprocess = Preprocess('mushroom.csv')
+    dataset = preprocess.load_csv()
+    thresholds = preprocess.get_thresholds()
+    ev = evaluation(dataset, thresholds)
+    for i in ev:
+        print("ratio: {0:.2f} acc: {1:.2f} std: {2:.2f}".format(i, ev[i]['acc'], ev[i]['std']))
+
+    actual, predicted, classes = confusion_matrix_helper(dataset, thresholds)
+    print(confusion_matrix(actual, predicted, classes))
+
+
+if __name__ == '__main__':
+    main()
+
