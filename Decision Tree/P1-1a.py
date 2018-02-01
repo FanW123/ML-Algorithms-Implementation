@@ -5,6 +5,7 @@ from random import randrange
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, Normalizer
 from random import seed
 
+
 # predict one of the three sub-types of the Irisower given four different physical features.
 # These features include the length and width of the sepals and the petals.
 # There are a total of 150 instances with each class having 50 instances.
@@ -19,19 +20,21 @@ def pre_process():
     dataset = np.concatenate((x, np.array([y]).T), axis=1)
     return dataset
 
+
 def normalize_data(data_set, type="min_max"):
     if type == "std":
         scaler = StandardScaler().fit(data_set)
         X_scaled = scaler.transform(data_set)
     if type == "l1" or type == "l2":
-        scaler = Normalizer(norm = type)
+        scaler = Normalizer(norm=type)
         X_scaled = scaler.fit_transform(data_set)
     if type == "min_max":
         scaler = MinMaxScaler(feature_range=(0, 1))
         X_scaled = scaler.fit_transform(data_set)
     return X_scaled
 
-def get_thresholds(dataset): # type(dataset) = ndarray
+
+def get_thresholds(dataset):  # type(dataset) = ndarray
     # shuffle is done in the split-n-fold part
     # generate thresholds
     num_feature = len(dataset[0]) - 1
@@ -39,20 +42,20 @@ def get_thresholds(dataset): # type(dataset) = ndarray
     thresholds = []
     for index in range(num_feature):  # loop all the features (0, 1, 2, 3)
         # sort the dataset by the current index(feature)
-        sorted_data = dataset[np.argsort(dataset[:,index])]
+        sorted_data = dataset[np.argsort(dataset[:, index])]
         feature = sorted_data[:, index]
         label = sorted_data[:, -1]
         temp = []
         for row in range(num_threshold):
             if row == 0 or label[row] != label[row + 1]:
                 temp.append((feature[row] + feature[row + 1]) * 1. / 2)
-        #add the list of thresholds for the feature
+        # add the list of thresholds for the feature
         thresholds.append(set(temp))
     return thresholds
 
+
 # Split a dataset into k folds
 def cross_validation_split(dataset, n_folds):
-
     dataset_split = list()
     dataset_copy = list(dataset)
     fold_size = int(len(dataset) / n_folds)
@@ -87,6 +90,7 @@ def predict(node, row):
         else:
             return node['right']
 
+
 def evaluation(dataset, thresholds, n_folds=10, mean_ratio=[0.05, 0.10, 0.15, 0.20]):
     folds = cross_validation_split(dataset, n_folds)
     acc = {}
@@ -106,9 +110,10 @@ def evaluation(dataset, thresholds, n_folds=10, mean_ratio=[0.05, 0.10, 0.15, 0.
             accuracy = accuracy_metric(actual, predicted)
             scores.append(accuracy)
         acc[ratio] = {}
-        acc[ratio]["acc"] = sum(scores) / (float(len(scores)) * 100)
+        acc[ratio]["acc"] = sum(scores) / (float(len(scores)))
         acc[ratio]["std"] = np.std(np.array(scores))
     return acc
+
 
 # sklearn cross validation, need to do shuffling in preprocessing
 # def evaluation(dataset, thresholds, n_folds = 10, mean_ratio = [0.05, 0.10, 0.15, 0.20]):
@@ -177,7 +182,7 @@ def calc_condition_ent(dataset, thresholds, feature):
         calculate ent H(y|x)
     """
     # calc ent(y|x)
-#     feature_thresholds = thresholds[:, feature]
+    #     feature_thresholds = thresholds[:, feature]
     # thresholds = [2]
     min_ent, min_threshold, group = sys.maxsize, sys.maxsize, None
     feature_thresholds = thresholds[feature]
@@ -209,6 +214,7 @@ def split(dataset, feature, threshold):
 def create_leaf(group):
     outcomes = [row[-1] for row in group]
     return max(set(outcomes), key=outcomes.count)
+
 
 def build_tree_helper(node, min_size, thresholds):
     if not thresholds:
@@ -246,13 +252,15 @@ def build_tree_helper(node, min_size, thresholds):
 
 def build_tree(dataset, min_size, thresholds):
     root = create_node(dataset, thresholds)
-    #print root['index']
-    #print root['thres']
+    # print root['index']
+    # print root['thres']
     thresholds[root['index']].remove(root['thres'])
     build_tree_helper(root, min_size, thresholds)
     return root
 
-def confusion_matrix_helper(dataset, thresholds, n_folds=10, ratio = 0.5):
+
+def confusion_matrix_helper(dataset, thresholds, n_folds=10, ratio=0.5):
+    classes = len(set(dataset[:, -1]))
     folds = cross_validation_split(dataset, n_folds)
     best_acc = 0.0
     actual = list()
@@ -274,16 +282,27 @@ def confusion_matrix_helper(dataset, thresholds, n_folds=10, ratio = 0.5):
             best_acc = acc
             actual = temp_actual
             predicted = temp_predicted
-    return actual, predicted
+    return actual, predicted, classes
 
-def confusion_matrix(actual, predicted):
-    confusion_matrix = np.zeros((len(actual), len(predicted)))
+
+def confusion_matrix(actual, predicted, classes):
+    confusion_matrix = np.zeros([classes, classes])
     for i in range(len(actual)):
-        confusion_matrix[int(actual[i]), int(predicted[i])] += 1
+        confusion_matrix[int(predicted[i]), int(actual[i])] += 1
     return confusion_matrix
 
-seed(1)
-dataset = pre_process()
-thresholds = get_thresholds(dataset)
-eval = evaluation(dataset, thresholds)
-print(eval)
+
+def main():
+    # seed(1)
+    dataset = pre_process()
+    thresholds = get_thresholds(dataset)
+    ev = evaluation(dataset, thresholds)
+    for i in ev:
+        print("ratio: {0:.2f} acc: {1:.2f} std: {2:.2f}".format(i, ev[i]['acc'], ev[i]['std']))
+    actual, predicted, classes = confusion_matrix_helper(dataset, thresholds, n_folds=10, ratio=0.05)
+    print(confusion_matrix(actual, predicted, classes))
+
+
+if __name__ == '__main__':
+    main()
+
