@@ -1,0 +1,4 @@
+Implementing the gradient descent algorithm for linear regression and report performance using k-fold cross-validation 
+on three datasets.
+
+Obtaining the analytical (closed-form solution) using normal equations for linear regression.
