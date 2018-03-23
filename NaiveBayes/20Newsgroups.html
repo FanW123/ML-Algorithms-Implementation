@@ -1,0 +1,191 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN"
+               "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+<title>Home Page for 20 Newsgroups Data Set</title>
+</head>
+<body bgcolor="#ffffff">
+<center>
+<h1>20 Newsgroups</h1>
+</center>
+
+<p>
+<h2>The 20 Newsgroups data set</h2>
+<p>
+The 20 Newsgroups data set is a collection of approximately 20,000
+newsgroup documents, partitioned (nearly) evenly across 20 different
+newsgroups. To the best of my knowledge, it was originally collected
+by Ken Lang, probably for his <i><a HREF="lang95.bib">Newsweeder:
+Learning to filter netnews</a></i> paper, though he does not
+explicitly mention this collection.  The 20 newsgroups collection has
+become a popular data set for experiments in text applications of
+machine learning techniques, such as text classification and text
+clustering.
+
+<p>
+<h2>Organization</h2>
+<p>
+The data is organized into 20 different newsgroups, each corresponding
+to a different topic.  Some of the newsgroups are very closely related
+to each other (e.g. <b>comp.sys.ibm.pc.hardware /
+comp.sys.mac.hardware</b>), while others are highly unrelated (e.g
+<b>misc.forsale / soc.religion.christian</b>).  Here is a list of the
+20 newsgroups, partitioned (more or less) according to subject matter:
+<center>
+<table border=1>
+<tr>
+<td>comp.graphics<br>comp.os.ms-windows.misc<br>comp.sys.ibm.pc.hardware<br>comp.sys.mac.hardware<br>comp.windows.x</td>
+<td>rec.autos<br>rec.motorcycles<br>rec.sport.baseball<br>rec.sport.hockey</td>
+<td>sci.crypt<br>sci.electronics<br>sci.med<br>sci.space</td>
+</tr><tr>
+<td>misc.forsale</td>
+<td>talk.politics.misc<br>talk.politics.guns<br>talk.politics.mideast</td>
+<td>talk.religion.misc<br>alt.atheism<br>soc.religion.christian</td>
+</tr>
+</table>
+</center>
+
+<H2>Data</H2>
+
+<p>
+The data available here are in .tar.gz bundles.  You will need <a
+href="http://www.gnu.org/software/tar/tar.html">tar</a> and <a
+href="http://www.gnu.org/software/gzip/gzip.html">gunzip</a> to open
+them.  Each subdirectory in the bundle represents a newsgroup; each
+file in a subdirectory is the text of some newsgroup document that was
+posted to that newsgroup.
+</p>
+
+<p>
+Below are three versions of the data set.  The first ("19997") is the
+original, unmodified version.  The second ("bydate") is sorted by date
+into training(60%) and test(40%) sets, does not include cross-posts
+(duplicates) and does not include newsgroup-identifying headers (Xref,
+Newsgroups, Path, Followup-To, Date).  The third ("18828") does not
+include cross-posts and includes only the "From" and "Subject"
+headers.
+</p>
+
+<ul>
+<li> <a href="20news-19997.tar.gz">20news-19997.tar.gz</a> - Original 20 Newsgroups data set
+<li> <a href="20news-bydate.tar.gz">20news-bydate.tar.gz</a> - 20 Newsgroups sorted by date; duplicates and some headers removed (18846 documents)
+<li> <a href="20news-18828.tar.gz">20news-18828.tar.gz</a> - 20 Newsgroups; duplicates removed, only "From" and "Subject" headers (18828 documents)
+</ul>
+
+I recommend the "bydate" version since cross-experiment comparison is
+easier (no randomness in train/test set selection),
+newsgroup-identifying information has been removed and it's more
+realistic because the train and test sets are separated in time.
+
+<p>[7/3/07] I had originally listed the bydate version as containing
+18941 documents.  I've discovered that the correct count is 18846, of
+which rainbow skips 22.  So the matlab version (below) represents
+18824 documents.  However, my <a
+href="rainbow2matlab.text">rainbow2matlab.py</a> script drops empty
+and single-word documents, of which there are 50
+post-rainbow-processing, so you will find only 18774 total entries in
+the matlab/octave version.
+
+<h2>Matlab/Octave</h2>
+
+Below is a processed version of the 20news-bydate data set which is
+easy to read into Matlab/Octave as a sparse matrix:
+
+<ul>
+  <li> <a href="20news-bydate-matlab.tgz">20news-bydate-matlab.tgz</a>
+</ul>
+
+You'll find six files:
+
+<ul>
+  <li> train.data
+  <li> train.label
+  <li> train.map
+  <li> test.data
+  <li> test.label
+  <li> test.map
+</ul>
+
+The .data files are formatted "docIdx wordIdx count".  The .label
+files are simply a list of label id's.  The .map files map from label
+id's to label names.  <a
+href="http://www.cs.umass.edu/~mccallum/bow/rainbow/">Rainbow</a> was
+used to lex the data files.  I used the following two scripts to
+produce the data files:
+
+<ul>
+  <li> <a href="lexData.text">lexData.sh</a>
+  <li> <a href="rainbow2matlab.text">rainbow2matlab.py</a>
+</ul>
+
+[Added 1/14/08] The following file contains the vocabulary for the
+indexed data.  The line number corresponds to the index number of the
+word---word on the first line is word #1, word on the second line is
+word #2, etc.
+
+<ul>
+  <li> <a href="vocabulary.txt">vocabulary.txt</a>
+</ul>
+
+<!--<p>
+There are two reasons for introducing a new version of 20 Newsgroups:
+<ol>
+<li> Each document in the original data set contains a "Newsgroup:"
+header identifying its class.  The modified version eliminates this
+and most other headers.  Only the "From:" and "Subject:" headers are
+left.
+<li> The original version contains 1169 dupliate documents.  The
+modified version contains none of these documents.
+</ol>
+In a data set where documents implicitly belong to only one category,
+duplicates only detract from the classification problem.  Assigning a
+document a single label is a different problem than assigning a
+document a set of relevant labels.  The 20 Newsgroups data has been
+primarily used in conjunction with the first task, assigning each
+document the single, most appropriate label.  Other data sets, such as
+<a
+href="http://www.research.att.com/~lewis/reuters21578.html">Reuters</a>
+are well suited for evaluating a system's ability to perform the
+second task.
+</p>-->
+
+<!--<h2>Notes</h2>
+
+<table>
+<tr>
+<td nowrap valign="top"><i>[8/19/02]</i></td>
+<td>20news-19997.tar.gz now includes full e-mail headers</td>
+</tr>
+<tr>
+<td nowrap valign="top"><i>[9/26/01]</i></td>
+<td>I initially published the original 20 Newsgroups data set as
+20news-19996.tar.gz.  <a
+href="http://www.cs.cmu.edu/~mccallum/bow">Rainbow</a> counts 19996
+documents using the default processing arguments.  It skips
+sci.crypt/16017 because of the funky signature.  I found 1169
+duplicates and subtracted to get 18827, even though there were 18828
+documents in the 20news-18827.tar.gz package.  I've renamed the
+packages to 20news-19997.tar.gz and 20news-18828.tar.gz to reflect the
+actual number of documents in each data set.</td>
+</tr>
+</table>-->
+
+<hr>
+
+<p>
+Other sources of information concerning this data set include
+<ul>
+<li> Tom Mitchell's <a
+href="http://www.cs.cmu.edu/afs/cs/project/theo-11/www/naive-bayes.html">web
+supplement</a> to his Machine Learning textbook.
+<li> The <a href="http://www-2.cs.cmu.edu/~TextLearning/">CMU Text Learning group</a>
+<li> The <a href="http://kdd.ics.uci.edu/databases/20newsgroups/20newsgroups.html">UCI KDD 20 Newsgroups entry</a>.
+</ul>
+</p>
+
+
+<hr>
+<a HREF=".."><img src="../images/email.png"></a> <br>
+Last modified: Mon Jan 14 13:38:35 2008
+</body>
+</html>
